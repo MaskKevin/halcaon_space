@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="12.0">
+<procedure name="main">
+<interface/>
+<body>
+<l>read_image (Image, 'C:/Users/SomeBody/Desktop/decode/Template-3-0.jpg')</l>
+<l>emphasize (Image, ImageEmphasize, 7, 7, 1)</l>
+<c>* 使用 binary_thresh 进行二值化</c>
+<l>binary_threshold (ImageEmphasize, Region, 'max_separability', 'light', UsedThreshold1)</l>
+<c></c>
+<l>*connection (Region, ConnectedRegions1)</l>
+<c></c>
+<c>* 闭运算</c>
+<l>closing_circle (Region, RegionClosing, 4)</l>
+<c></c>
+<c>* 进行腐蚀操作</c>
+<l>erosion_circle (RegionClosing, RegionErosion, 1)</l>
+<c></c>
+<l>get_image_size(Image, Width, Height)</l>
+<c></c>
+<l>region_to_bin (RegionErosion, bin_image, 255, 0, Width, Height)</l>
+<c>* 创建二维码识别模型</c>
+<l>create_data_code_2d_model ('QR Code', [], [], normal_model)</l>
+<c></c>
+<l>create_data_code_2d_model ('QR Code', [], [], row_morrior)</l>
+<c></c>
+<l>create_data_code_2d_model ('QR Code', [], [], col_morrior)</l>
+<c></c>
+<l>create_data_code_2d_model ('QR Code', [], [], rotate_180)</l>
+<c></c>
+<l>mirror_image (bin_image, row_mrrior_image, 'row')</l>
+<c></c>
+<l>mirror_image (bin_image, col_mrrior_image, 'column')</l>
+<c></c>
+<l>rotate_image (bin_image, rotate_mrrior_image, 180,'constant')</l>
+<c></c>
+<l>find_data_code_2d (bin_image, SymbolXLDs, normal_model, 'train', 'all', ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>find_data_code_2d (row_mrrior_image, SymbolXLDs, row_morrior, 'train', 'all', ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>find_data_code_2d (col_mrrior_image, SymbolXLDs, col_morrior, 'train', 'all', ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>find_data_code_2d (rotate_mrrior_image, SymbolXLDs, rotate_180, 'train', 'all', ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<c>* 识别二维码</c>
+<l>find_data_code_2d (Image, SymbolXLDs, normal_model, [], [], ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>read_image (Image, 'C:/Users/SomeBody/Desktop/decode/Template-3-0.jpg')</l>
+<c>* Read the symbol in the image</c>
+<l>find_data_code_2d (Image, SymbolXLDs, normal_model, [], [], ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>read_image (Image, 'C:/Users/SomeBody/Desktop/decode/Template-3-0-1.jpg')</l>
+<c></c>
+<l>mirror_image(Image,row_image,'row')</l>
+<c></c>
+<l>find_data_code_2d (row_image, SymbolXLDs, row_morrior, [], [], ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>mirror_image (Image, col_image, 'column')</l>
+<c></c>
+<l>find_data_code_2d (col_image, SymbolXLDs, col_morrior, [], [], ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>rotate_image (Image, rotate_image, 180,'constant')</l>
+<c></c>
+<l>find_data_code_2d (rotate_image, SymbolXLDs, rotate_180, [], [], ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>rotate_image (Image, rotate_90_image, -90,'constant')</l>
+<c></c>
+<l>find_data_code_2d (rotate_90_image, SymbolXLDs, normal_model, [], [], ResultHandles, DecodedDataStrings)</l>
+<c></c>
+<l>read_image (dm_code, 'C:/Users/SomeBody/Desktop/decode/d971f35829b6edb2a61472314e8de00.png')</l>
+<c></c>
+<l>create_data_code_2d_model ('QR Code', [], [], DataCodeHandle1)</l>
+<c></c>
+<l>find_data_code_2d (dm_code, SymbolXLDs1, DataCodeHandle1, ['stop_after_result_num'], [1], ResultHandles1, DecodedDataStrings1)</l>
+<c></c>
+<l>get_data_code_2d_results(DataCodeHandle1,0,'quality_isoiec15415_labels',resultssss)</l>
+<c></c>
+<l>get_data_code_2d_results(DataCodeHandle1,0,'quality_isoiec15415',resultssss1)</l>
+<c></c>
+<c>* 销毁模型</c>
+<l>clear_data_code_2d_model (normal_model)</l>
+<c></c>
+<l>clear_data_code_2d_model (row_morrior)</l>
+<c></c>
+<l>clear_data_code_2d_model (col_morrior)</l>
+<c></c>
+<l>clear_data_code_2d_model (rotate_180)</l>
+<c>* 转为灰度图</c>
+<l>* binary_threshold (Image, Region1, 'max_separability', 'dark', UsedThreshold)</l>
+<l>* connection(Region1, ConnectedRegions)</l>
+<l>* select_shape(ConnectedRegions, SelectedRegions, 'area', 'and', 100, 99999) // 根据面积筛选区域</l>
+<l>* region_to_bin (SelectedRegions, BinImage, 255, 0, 512, 512)</l>
+<l>* dev_open_window_fit_image (BinImage, 0, 0, -1, -1, WindowHandle)</l>
+<c></c>
+<l>* set_display_font (WindowHandle, 16, 'mono', 'true', 'false')</l>
+<l>* dev_set_color ('red')</l>
+<l>* dev_display (BinImage)</l>
+<c></c>
+<c>* 创建二维码模型</c>
+<c>* 参数一：二维码类型</c>
+<c>* 参数二：通用参数的名称 针对二维数据代码模型进行了调整。</c>
+<c>* 参数三：针对二维数据代码模型进行了调整。</c>
+<c>* 参数四：数据代码模型的句柄。</c>
+<l>* create_data_code_2d_model ('QR Code', [], [], DataCodeHandle)</l>
+<c></c>
+<c>* 查找图形中二维码，并获取信息</c>
+<c>* 参数一：图片</c>
+<c>* 参数二：围绕成功解码数据的 XLD 轮廓 代码符号。</c>
+<c>* 参数三：二维码模型的句柄。</c>
+<c>* 参数四：参数的名称 控制操作员的行为。</c>
+<c>* 参数五：可选泛型参数的值。</c>
+<c>* 参数六：所有成功解码的二维数据代码的句柄 符号。</c>
+<c>* 参数七：所有检测到的二维数据代码的解码数据字符串 图像中的符号。</c>
+<l>* find_data_code_2d (BinImage, SymbolXLDs, DataCodeHandle, [], [], ResultHandles, DecodedDataStrings)</l>
+<l>* dev_display (BinImage)</l>
+<l>* dev_display (SymbolXLDs)</l>
+<l>* disp_message (WindowHandle, '读取出来的二维码信息是：'+DecodedDataStrings, 'window', 12, 12, 'red', 'false')</l>
+<l>* clear_data_code_2d_model (DataCodeHandle)</l>
+<c></c>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

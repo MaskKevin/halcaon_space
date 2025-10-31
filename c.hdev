@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="12.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 读取训练图像</c>
+<l>read_image (Image, 'training_image.bmp')</l>
+<c></c>
+<c>* 选择ROI区域（矩形区域）</c>
+<l>draw_rectangle1 (3600, Row1, Column1, Row2, Column2)</l>
+<l>gen_rectangle1 (Rectangle, Row1, Column1, Row2, Column2)</l>
+<c></c>
+<c>* 减少域，只处理ROI区域</c>
+<l>reduce_domain (Image, Rectangle, ImageReduced)</l>
+<c></c>
+<c>* 创建基于形状的模板</c>
+<l>create_shape_model (ImageReduced, 'auto', -0.04, 0.04, 'auto', 'auto', 'use_polarity', 'auto', 'auto', ModelID)</l>
+<c></c>
+<c>* 保存模板</c>
+<l>write_shape_model (ModelID, 'my_model.shm')</l>
+<c></c>
+<c>* 清除模型</c>
+<l>clear_shape_model (ModelID)</l>
+<c></c>
+<c>* 读取测试图像</c>
+<l>read_image (TestImage, 'test_image.bmp')</l>
+<c></c>
+<c>* 读取模板</c>
+<l>read_shape_model ('my_model.shm', ModelID)</l>
+<c></c>
+<c>* 设置匹配参数</c>
+<l>find_shape_model (TestImage, ModelID, -0.04, 0.04, 0.6, 1, 0.5, 'least_squares', 0, 0.9, Row, Column, Angle, Score)</l>
+<c></c>
+<c>* 显示结果</c>
+<l>dev_display (TestImage)</l>
+<l>dev_set_color ('green')</l>
+<l>dev_set_draw ('margin')</l>
+<l>if (|Row| &gt; 0)</l>
+<c>    * 获取模板轮廓</c>
+<l>    get_shape_model_contours (ModelContours, ModelID, 1)</l>
+<c>    * 根据匹配结果变换轮廓</c>
+<l>    vector_angle_to_rigid (0, 0, 0, Row, Column, Angle, HomMat2D)</l>
+<l>    affine_trans_contour_xld (ModelContours, ContoursTrans, HomMat2D)</l>
+<l>    dev_display (ContoursTrans)</l>
+<c>    </c>
+<c>    * 输出匹配结果</c>
+<l>    for i := 0 to |Row|-1 by 1</l>
+<l>        disp_message (3600, 'Score: ' + Score[i], 'image', Row[i] - 40, Column[i] - 40, 'black', 'true')</l>
+<l>    endfor</l>
+<l>endif</l>
+<c></c>
+<c>* 清除模型</c>
+<l>clear_shape_model (ModelID)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

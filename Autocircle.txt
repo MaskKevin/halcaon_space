@@ -1,0 +1,306 @@
+using HalconDotNet;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using UtilsLibrary;
+using VisionTools;
+
+namespace HalconSharp
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+            mainCamera1.grab = CaptureMark;
+            mainCamera1.template_grab = template_search;
+        }
+
+        HalconDotNet.HImage hImage = null;
+        HalconDotNet.HImage template_image = null;
+        HTuple model = null;
+        private void button1_Click(object sender, EventArgs e)
+        {
+            mainCamera1.advantage_grab = false;
+            mainCamera1.ClearCircle();
+            GrabMark();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog OpenFile = new OpenFileDialog();
+
+            if (OpenFile.ShowDialog() == DialogResult.OK)
+            {
+                string ImageName = OpenFile.FileName;
+
+                HOperatorSet.ReadShapeModel("model.bin", out HTuple mymodel);
+                mainCamera1.ClearCircle();
+                HalconDotNet.HImage test_image = new HalconDotNet.HImage(ImageName);
+                mainCamera1.SetBitmap(OpenFile.FileName);
+                HOperatorSet.FindShapeModel(test_image, mymodel, -Math.PI * 30 / 180, Math.PI * 30 / 180, 0.7, 1, 0.3, "least_squares", 0, 0.7, out HTuple row, out HTuple col, out HTuple ang,out HTuple score);
+
+                MyUtils.PointF pt = new MyUtils.PointF(col, row);
+                mainCamera1.AddCircle(pt, float.Parse(textBox3.Text));
+                textBox5.Text = string.Format("{0:F3}",col);
+                textBox4.Text = string.Format("{0:F3}", row);
+                test_image.Dispose();
+            }
+        }
+
+        private void GrabMark()
+        {
+            OpenFileDialog OpenFile = new OpenFileDialog();
+
+            if (OpenFile.ShowDialog() == DialogResult.OK)
+            {
+                string ImageName = OpenFile.FileName;
+
+                if (hImage != null)
+                    hImage.Dispose();
+
+                hImage = new HalconDotNet.HImage(ImageName);
+                mainCamera1.SetBitmap(OpenFile.FileName);
+
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            mainCamera1.InitData();
+        }
+
+        private void 选定ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void PointInCircle(MyUtils.PointF pt)
+        {
+
+        }
+
+        private void CaptureMark(MyUtils.PointF center)
+        {
+            try
+            {
+                mainCamera1.ClearCircle();
+                mainCamera1.advantage_grab = false;
+
+                HTuple channels;
+                HOperatorSet.CountChannels(hImage, out channels);
+
+                HObject grayImage;
+                if (channels.I == 3)
+                {
+                    HOperatorSet.Rgb1ToGray(hImage, out grayImage);
+                }
+                else
+                {
+                    grayImage = new HImage(hImage);
+                }
+
+                float threshold = float.Parse(textBox6.Text);
+
+                HOperatorSet.AutoThreshold(hImage, out HObject edges, threshold);
+                HOperatorSet.Connection(edges, out HObject connect);
+                HOperatorSet.GenContourRegionXld(connect, out HObject cont, "border");
+                // 3. 亚像素边缘检测
+                //HOperatorSet.EdgesSubPix(grayImage, out HObject edges, "canny", 1, 5, 10);
+
+                // 4. 根据圆度筛选轮廓
+                HOperatorSet.SelectShapeXld(cont, out HObject selectedXLD2, "circularity", "and", 0.8, 1.0);
+                HOperatorSet.SelectShapeXld(selectedXLD2, out HObject selectedXLD22, "contlength", "and", 120, 999999999);
+                HOperatorSet.SelectShapeXld(selectedXLD22, out HObject selectedXLD3, "area", "and", 100, 999999999);
+
+                // 5. 拟合圆形
+                HTuple row1, column1, radius1, startPhi1, endPhi1, pointOrder1;
+                HOperatorSet.FitCircleContourXld(selectedXLD3, "algebraic", -1, 0, 0, 3, 2,
+                                                out row1, out column1, out radius1,
+                                                out startPhi1, out endPhi1, out pointOrder1);
+
+                // 6. 获取轮廓数量
+                HTuple number;
+                HOperatorSet.CountObj(selectedXLD3, out number);
+
+                int flag = -1;
+                double dis = 999999999;
+
+                List<int> index = new List<int>();
+
+                for (int i = 0; i < number; i++)
+                {
+                    double x = (center.x - column1[i]);
+                    double y = (center.y - row1[i]);
+
+                    double cur_dis = Math.Sqrt(x * x + y * y);
+
+                    if(cur_dis < radius1[i])
+                    {
+                        dis = cur_dis;
+                        flag = i;
+                        index.Add(i);
+                    }
+                }
+
+                if (flag == -1 || index.Count < 0)
+                    return;
+
+                flag = 0;
+
+                double circularity = 0;
+
+                for (int i = 0; i < index.Count; i++)
+                {
+                    HObject singleXld = new HObject();
+                    HOperatorSet.SelectObj(selectedXLD3, out singleXld, new HTuple(index[i] + 1));
+                    HOperatorSet.CircularityXld(singleXld, out HTuple c);
+
+                    if (c > circularity && c > 0.6)
+                    {
+                        circularity = c;
+                        flag = index[i];
+                    }
+
+                    double cir = c;
+
+                    Console.WriteLine(cir);
+                }
+
+                double xpos = column1[flag];
+                double ypos = row1[flag];
+                double r = radius1[flag];
+
+                textBox1.Text = string.Format("{0:F3}", xpos);
+                textBox2.Text = string.Format("{0:F3}", ypos);
+                textBox3.Text = string.Format("{0:F3}", r);
+
+                MyUtils.PointF pt = new MyUtils.PointF(column1[flag], row1[flag]);
+                mainCamera1.AddCircle(pt, radius1[flag]);
+
+                float contrast = float.Parse(textBox7.Text);
+
+                //HOperatorSet.GenCircleContourXld(out HObject Contour, xpos, ypos, r, 0, 2 * Math.PI, pointOrder1[flag], 1);// -Math.PI * 30 / 180, Math.PI * 60 / 180
+                HOperatorSet.GenCircleContourXld(out HObject Contour, xpos, ypos, 100, 0, 2 * Math.PI, pointOrder1[flag], 1);// -Math.PI * 30 / 180, Math.PI * 60 / 180
+                HOperatorSet.CreateScaledShapeModelXld(Contour, "auto", -Math.PI * 30 / 180, Math.PI * 60 / 180, "auto", 0.5, 5, "auto", "auto", "ignore_local_polarity", contrast, out HTuple model1);
+                HOperatorSet.CreateShapeModelXld(Contour,5, -Math.PI * 30 / 180, Math.PI * 60 / 180, 0.5, "auto", "ignore_local_polarity", contrast, out model);
+                HOperatorSet.WriteShapeModel(model, "model.bin");
+                HOperatorSet.WriteShapeModel(model1, "model1.bin");
+
+            }
+            catch (HOperatorException ex)
+            {
+                MessageBox.Show($"Halcon操作错误: {ex.Message}");
+            }
+        }
+
+        public void template_search(MyUtils.PointF mouse_pt)
+        {
+            mainCamera1.ClearCircle();
+            HOperatorSet.ReadShapeModel("model1.bin", out HTuple mymodel);
+            HOperatorSet.FindScaledShapeModel(template_image, mymodel, -Math.PI * 30 / 180, Math.PI * 30 / 180, 0.5, 5.0, 0.8, 10, 1, "least_squares", 0, 0, out HTuple row, out HTuple col, out HTuple ang, out HTuple scale, out HTuple score);
+            double max_score = 0;
+            int index = -1;
+            mainCamera1.ClearCircle();
+            double temp_r = 999999999;
+            for (int i = 0; i < col.Length; i++)
+            {
+                double x = (mouse_pt.x - col[i]);
+                double y = (mouse_pt.y - row[i]);
+
+                double cur_dis = Math.Sqrt(x * x + y * y);
+                double cur_r = float.Parse(textBox3.Text) * scale[i];
+
+                if (cur_dis <= cur_r && cur_r <= temp_r)
+                {
+                    max_score = score[i];
+                    temp_r = cur_r;
+                    index = i;
+                }
+
+                 mainCamera1.AddCircle(new MyUtils.PointF(col[i],row[i]), cur_r);
+            }
+
+            if (index < 0) return;
+
+            double r = float.Parse(textBox3.Text) * scale[index];
+            textBox8.Text = r.ToString();
+            MyUtils.PointF pt = new MyUtils.PointF(col[index], row[index]);
+            mainCamera1.AddCircle(pt, r);
+            textBox5.Text = string.Format("{0:F3}", (double)col[index]);
+            textBox4.Text = string.Format("{0:F3}", (double)row[index]);
+
+            float contrast = float.Parse(textBox7.Text);
+            HOperatorSet.GenCircleContourXld(out HObject circle, col[index], row[index], r, 0, 6.283185, "positive", 1.0);
+            HOperatorSet.CreateShapeModelXld(circle, "auto", -Math.PI * 30 / 180, Math.PI * 30 / 180, "auto", "auto", "ignore_local_polarity", contrast, out HTuple mod);
+            HOperatorSet.WriteShapeModel(mod, "model2.bin");
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            mainCamera1.advantage_grab = true;
+
+            OpenFileDialog OpenFile = new OpenFileDialog();
+
+            if (OpenFile.ShowDialog() == DialogResult.OK)
+            {
+                if (template_image != null)
+                {
+                    template_image.Dispose();
+                }
+                mainCamera1.advantage_grab = true;
+                string ImageName = OpenFile.FileName;
+                template_image = new HalconDotNet.HImage(ImageName);
+
+                mainCamera1.SetBitmap(OpenFile.FileName);
+                mainCamera1.ClearCircle();
+            }
+
+            mainCamera1.advantage_grab = true;
+
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog OpenFile = new OpenFileDialog();
+
+            if (OpenFile.ShowDialog() == DialogResult.OK)
+            {
+                string ImageName = OpenFile.FileName;
+
+                HOperatorSet.ReadShapeModel("model2.bin", out HTuple mymodel);
+
+                HalconDotNet.HImage test_image = new HalconDotNet.HImage(ImageName);
+                mainCamera1.SetBitmap(OpenFile.FileName);
+                mainCamera1.ClearCircle();
+                HOperatorSet.FindShapeModel(test_image, mymodel, -Math.PI * 30 / 180, Math.PI * 30 / 180, 0.8, 1, 0.3, "least_squares", 0, 0.7, out HTuple row, out HTuple col, out HTuple ang, out HTuple score);
+
+                int index = 0;
+
+                double r = float.Parse(textBox8.Text);
+                MyUtils.PointF pt = new MyUtils.PointF(col[index], row[index]);
+                mainCamera1.AddCircle(pt, r);
+                textBox5.Text = string.Format("{0:F3}", (double)col[index]);
+                textBox4.Text = string.Format("{0:F3}", (double)row[index]);
+                test_image.Dispose();
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            double radius = double.Parse(textBox3.Text);
+            float contrast = float.Parse(textBox7.Text);
+            HOperatorSet.GenCircleContourXld(out HObject cont, 0, 0, radius, 0, 2 * Math.PI, "positive", 1.0);
+            HOperatorSet.CreateScaledShapeModelXld(cont, "auto", -Math.PI * 30 / 180, Math.PI * 30 / 180, "auto", 0.5, 10, "auto", "auto", "ignore_local_polarity", contrast, out HTuple model1);
+            HOperatorSet.WriteShapeModel(model1, "model1.bin");
+        }
+    }
+}

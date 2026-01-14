@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="12.0">
+<procedure name="main">
+<interface/>
+<body>
+<l>read_image (Image, 'C:/Users/SomeBody/Desktop/decode/96664100ed902b7adede3da27c4464ab.jpg')</l>
+<l>gen_circle_contour_xld (ContCircle, 0, 0, 51.22, 0, 6.28318, 'positive', 1)</l>
+<l>create_shape_model_xld (ContCircle, 'auto', 0, 0, 'auto', 'auto', 'ignore_local_polarity', 5, ModelID)</l>
+<l>*create_scaled_shape_model_xld (ContCircle, 'auto', -10, 10, 'auto', 0.902, 1.0978, 'auto', 'auto', 'ignore_local_polarity', 5, ModelID)</l>
+<l>write_shape_model (ModelID, 'C:/Users/SomeBody/Desktop/decode/Template-1-1.temp1')</l>
+<l>read_shape_model ('C:/Users/SomeBody/Desktop/decode/Template-1-1.temp1', ModelID)</l>
+<c></c>
+<l>find_shape_model (Image, ModelID, -10, 10, 0.7, 1, 0.7, 'least_squares', 5, 0.1, Row, Column, Angle, Score)</l>
+<l>find_scaled_shape_model (Image, ModelID, -10, 10, 0.902, 1.097, 0.6, 1, 0.7, 'least_squares', 5, 0.1, Row, Column, Angle1, Scale, Score1)</l>
+<l>*gen_circle_contour_xld (ContCircle1, Row, Column,  104.238 * Scale, 0, 6.28318, 'positive', 1)</l>
+<l>gen_circle_contour_xld (ContCircle1, Row, Column, 51.22015 , 0, 6.28318, 'positive', 1)</l>
+<c></c>
+<l>read_image (Image, 'C:/Users/SomeBody/Desktop/decode/96664100ed902b7adede3da27c4464ab.jpg')</l>
+<l>find_shape_model (Image, ModelID, -1, 1, 0.85, 1, 1, 'least_squares', 0, 0.1, Row, Column, Angle, Score)</l>
+<l>gen_circle_contour_xld (ContCircle1, Row, Column, 51.22015 , 0, 6.28318, 'positive', 1)</l>
+<c></c>
+<l>*gen_circle_contour_xld (ContCircle1, Row1, Column1, 51.22015 * Scale, 0, 6.28318, 'positive', 1)</l>
+<c></c>
+<c></c>
+<c></c>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

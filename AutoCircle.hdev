@@ -7,7 +7,7 @@
 <l>dev_close_window ()</l>
 <l>rgb1_to_gray (Image, GrayImage)</l>
 <l>scale_image (GrayImage, ImageScaled, 2.57576, 0)</l>
-<l>auto_threshold (ImageScaled, Regions, 15)</l>
+<l>auto_threshold (ImageScaled, Regions, 5)</l>
 <l>opening_rectangle1(Regions, ImageOpened, 5, 5)</l>
 <c></c>
 <l>connection (Regions, ConnectedRegions)</l>
